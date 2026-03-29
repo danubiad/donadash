@@ -77,11 +77,17 @@ export default function Home() {
 
   const handleMoveTask = async (taskId, newColumn) => {
     try {
+      // Atualizar no Firestore
       const taskRef = doc(db, 'tasks', taskId);
       await updateDoc(taskRef, { column: newColumn });
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t));
+      
+      // Atualizar localmente
+      const updated = tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t);
+      setTasks(updated);
     } catch (error) {
       console.error('Erro ao mover tarefa:', error);
+      // Se falhar, recarrega do Firestore
+      await loadTasks();
     }
   };
 
@@ -213,7 +219,21 @@ export default function Home() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                 {columns.map(column => (
-                  <div key={column.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div 
+                key={column.id} 
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const taskId = e.dataTransfer.getData('taskId');
+                  console.log('Drop na coluna - taskId:', taskId, 'column:', column.id);
+                  if (taskId) {
+                    handleMoveTask(taskId, column.id);
+                  }
+                }}
+                style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                     <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                       {column.title}
                     </h3>
@@ -227,17 +247,7 @@ export default function Home() {
                           onDragStart={(e) => {
                             e.dataTransfer.effectAllowed = 'move';
                             e.dataTransfer.setData('taskId', task.id);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const taskId = e.dataTransfer.getData('taskId');
-                            if (taskId) {
-                              handleMoveTask(taskId, column.id);
-                            }
+                            console.log('Drag start - taskId:', task.id);
                           }}
                           style={{
                             background: '#f9f9f9',
