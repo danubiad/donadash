@@ -1,0 +1,109 @@
+╔═══════════════════════════════════════════════════════════════╗
+║         CONECTAR WHATSAPP AO PAINEL DONASYSTEM               ║
+║         (Puxar mensagens automaticamente pro CRM)             ║
+╚═══════════════════════════════════════════════════════════════╝
+
+PASSO 1: Baixar credenciais do Firebase
+───────────────────────────────────────
+1. Acesse: https://console.firebase.google.com/project/donadash-594f7/settings/serviceaccounts/adminsdk
+2. Clique em "Gerar nova chave privada"
+3. Um arquivo JSON vai baixar
+4. Cole na pasta do projeto COM O NOME: firebase-service-account.json
+
+(Esse arquivo contém as chaves para seu painel acessar o Firestore)
+
+
+PASSO 2: Instalar as bibliotecas
+────────────────────────────────
+Abra o terminal na pasta do projeto e rode:
+
+npm install
+
+Isso vai instalar whatsapp-web.js, qrcode-terminal e firebase-admin
+
+
+PASSO 3: Conectar WhatsApp
+──────────────────────────
+No terminal, digite:
+
+npm run whatsapp:connect
+
+Aguarde alguns segundos...
+
+
+PASSO 4: Scanear o QR Code
+──────────────────────────
+1. Um QR Code vai aparecer no terminal
+2. Abra WhatsApp no seu CELULAR (o número que quer conectar)
+3. Aponte a câmera para o QR Code
+4. Confirme
+
+Quando conectar, você vai ver:
+
+  ✅ WhatsApp conectado com sucesso!
+
+  🟢 SISTEMA ATIVO - Puxando mensagens pro CRM
+
+
+PASSO 5: Enviar mensagem de teste
+──────────────────────────────────
+1. Vá no WhatsApp e envie uma mensagem para seu próprio número
+   (ou peça pra alguém enviar uma mensagem pra você)
+2. No terminal, você vai ver:
+
+  📱 Mensagem recebida:
+     De: Seu Nome
+     Telefone: +551199999999
+     Mensagem: "teste"
+
+  ✅ Novo lead criado: Seu Nome
+
+
+PASSO 6: Confirmar no painel
+────────────────────────────
+1. Acesse: https://donadash.vercel.app
+2. Loga com: Danubia / F2372dff7c%
+3. Clica em "CRM"
+4. Você vai ver o lead criado na coluna "Leads"
+
+
+═══════════════════════════════════════════════════════════════
+
+PRONTO! Agora todo mensagem recebida vai:
+- Criar um novo lead automaticamente
+- Ou atualizar um lead existente
+- Registrar a mensagem
+- Aparecer no painel CRM
+
+═══════════════════════════════════════════════════════════════
+
+PARA DEIXAR RODANDO 24/7:
+
+Se quer que o bot fique SEMPRE ativo (não precisa deixar o terminal aberto):
+
+1. Instale PM2:
+   npm install -g pm2
+
+2. Inicie o bot com PM2:
+   npm run whatsapp:connect:pm2
+
+3. Para ver logs:
+   pm2 logs whatsapp-crm
+
+4. Para parar:
+   pm2 stop whatsapp-crm
+
+═══════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+❌ "firebase-service-account.json not found"
+   → Verifique se o arquivo está na pasta raiz com o nome EXATO
+
+❌ "Cannot find module 'whatsapp-web.js'"
+   → Execute: npm install
+
+❌ "QR Code não aparece"
+   → Tente em outro terminal (VS Code, PowerShell, etc)
+
+═══════════════════════════════════════════════════════════════

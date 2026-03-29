@@ -5,12 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "whatsapp:connect": "node whatsapp-bot.js",
+    "whatsapp:connect:pm2": "pm2 start whatsapp-bot.js --name 'whatsapp-crm'"
   },
   "dependencies": {
     "next": "14.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "firebase": "^10.0.0"
+    "firebase": "^10.0.0",
+    "whatsapp-web.js": "^1.25.0",
+    "qrcode-terminal": "^0.12.0",
+    "firebase-admin": "^12.0.0"
   }
 }
