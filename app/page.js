@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
+import CRM from './components/CRM';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDSRV3tp-_MP9mdQNbwPErsJQnQ0ofZx0",
@@ -152,6 +153,8 @@ export default function Home() {
             />
           )
         )}
+
+        {activeView === 'crm' && <CRM />}
 
         {activeView === 'agentes' && (
           <div>

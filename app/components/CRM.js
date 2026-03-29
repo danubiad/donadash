@@ -1,20 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDSRV3tp-_MP9mdQNbwPErsJQnQ0ofZx0",
-  authDomain: "donadash-594f7.firebaseapp.com",
-  projectId: "donadash-594f7",
-  storageBucket: "donadash-594f7.firebasestorage.app",
-  messagingSenderId: "227540899665",
-  appId: "1:227540899665:web:5ea25fa25abd8abc2f570",
-  measurementId: "G-K2W46N4H7P"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase-config';
 
 const columns = [
   { id: 'leads', title: 'Leads', color: '#8ca4af' },
@@ -25,7 +12,7 @@ const columns = [
   { id: 'compras', title: 'Compras Feitas', color: '#96af8c' },
 ];
 
-export default function CRMPage() {
+export default function CRM() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newLead, setNewLead] = useState({
