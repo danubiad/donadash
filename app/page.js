@@ -1,8 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const columns = [
   { id: 'backlog', title: 'A Fazer', color: '#999' },
@@ -11,10 +9,17 @@ const columns = [
   { id: 'done', title: 'Feito', color: '#96af8c' },
 ];
 
+const initialTasks = [
+  { id: '1', title: 'Buscar novidades em grupos', description: 'Content Harvester', column: 'backlog' },
+  { id: '2', title: 'Atualizar catálogo', description: 'Adicionar novos produtos', column: 'backlog' },
+  { id: '3', title: 'Preparar email marketing', description: 'Segmento: revendedoras', column: 'doing' },
+  { id: '4', title: 'Design de campanha', description: 'Aguardando aprovação', column: 'review' },
+  { id: '5', title: 'Relatório semanal', description: 'Concluído', column: 'done' },
+];
+
 export default function Home() {
   const [auth, setAuth] = useState(false);
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState({ title: '', description: '', column: 'backlog' });
   const router = useRouter();
 
@@ -28,54 +33,51 @@ export default function Home() {
     }
   }, [router]);
 
-  const loadTasks = async () => {
+  const loadTasks = () => {
     try {
-      const tasksCollection = collection(db, 'tasks');
-      const taskSnapshot = await getDocs(tasksCollection);
-      const tasksList = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTasks(tasksList);
+      const saved = localStorage.getItem('tasks');
+      if (saved) {
+        setTasks(JSON.parse(saved));
+      } else {
+        setTasks(initialTasks);
+        localStorage.setItem('tasks', JSON.stringify(initialTasks));
+      }
     } catch (error) {
-      console.error('Erro ao carregar tarefas:', error);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar:', error);
+      setTasks(initialTasks);
     }
   };
 
-  const handleMoveTask = async (taskId, newColumn) => {
+  const saveTasks = (newTasks) => {
     try {
-      const taskRef = doc(db, 'tasks', taskId);
-      await updateDoc(taskRef, { column: newColumn });
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t));
+      localStorage.setItem('tasks', JSON.stringify(newTasks));
+      setTasks(newTasks);
     } catch (error) {
-      console.error('Erro ao mover tarefa:', error);
+      console.error('Erro ao salvar:', error);
     }
   };
 
-  const handleAddTask = async (e) => {
+  const handleMoveTask = (taskId, newColumn) => {
+    const updated = tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t);
+    saveTasks(updated);
+  };
+
+  const handleAddTask = (e) => {
     e.preventDefault();
     if (!newTask.title.trim()) return;
 
-    try {
-      const tasksCollection = collection(db, 'tasks');
-      await addDoc(tasksCollection, newTask);
-      setNewTask({ title: '', description: '', column: 'backlog' });
-      loadTasks();
-    } catch (error) {
-      console.error('Erro ao adicionar tarefa:', error);
-    }
+    const newId = Date.now().toString();
+    const updated = [...tasks, { id: newId, ...newTask }];
+    saveTasks(updated);
+    setNewTask({ title: '', description: '', column: 'backlog' });
   };
 
-  const handleDeleteTask = async (taskId) => {
-    try {
-      const taskRef = doc(db, 'tasks', taskId);
-      await deleteDoc(taskRef);
-      setTasks(tasks.filter(t => t.id !== taskId));
-    } catch (error) {
-      console.error('Erro ao deletar tarefa:', error);
-    }
+  const handleDeleteTask = (taskId) => {
+    const updated = tasks.filter(t => t.id !== taskId);
+    saveTasks(updated);
   };
 
-  if (!auth || loading) return null;
+  if (!auth) return null;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -126,25 +128,25 @@ export default function Home() {
 
         <form onSubmit={handleAddTask} style={{ marginBottom: '40px', padding: '20px', background: '#f9f9f9', borderRadius: '8px' }}>
           <h3 style={{ margin: '0 0 16px 0' }}>Adicionar Nova Tarefa</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '12px', alignItems: 'flex-end' }}>
             <input
               type="text"
-              placeholder="Título da tarefa"
+              placeholder="Título"
               value={newTask.title}
               onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', boxSizing: 'border-box' }}
+              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
             />
             <input
               type="text"
               placeholder="Descrição"
               value={newTask.description}
               onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', boxSizing: 'border-box' }}
+              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
             />
             <select
               value={newTask.column}
               onChange={(e) => setNewTask({ ...newTask, column: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
             >
               {columns.map(col => (
                 <option key={col.id} value={col.id}>{col.title}</option>
@@ -169,11 +171,20 @@ export default function Home() {
                   <div
                     key={task.id}
                     draggable
-                    onDragStart={(e) => e.dataTransfer.effectAllowed = 'move'}
-                    onDragOver={(e) => e.preventDefault()}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('taskId', task.id);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      handleMoveTask(task.id, column.id);
+                      const taskId = e.dataTransfer.getData('taskId');
+                      if (taskId) {
+                        handleMoveTask(taskId, column.id);
+                      }
                     }}
                     style={{
                       background: 'white',
@@ -183,9 +194,10 @@ export default function Home() {
                       borderLeft: `4px solid ${column.color}`,
                       cursor: 'grab',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      userSelect: 'none'
                     }}
                   >
-                    <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold' }}>
+                    <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
                       {task.title}
                     </p>
                     <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
