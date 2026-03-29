@@ -1,20 +1,27 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDSRV3tp-_MP9mdQNbwPErsJQnQ0ofZx0",
+  authDomain: "donadash-594f7.firebaseapp.com",
+  projectId: "donadash-594f7",
+  storageBucket: "donadash-594f7.firebasestorage.app",
+  messagingSenderId: "227540899665",
+  appId: "1:227540899665:web:5ea25fa25abd8abc2f570",
+  measurementId: "G-K2W46N4H7P"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const columns = [
   { id: 'backlog', title: 'A Fazer', color: '#999' },
   { id: 'doing', title: 'Fazendo', color: '#af948c' },
   { id: 'review', title: 'Revisão', color: '#afa08c' },
   { id: 'done', title: 'Feito', color: '#96af8c' },
-];
-
-const initialTasks = [
-  { id: '1', title: 'Buscar novidades em grupos', description: 'Content Harvester', column: 'backlog' },
-  { id: '2', title: 'Atualizar catálogo', description: 'Adicionar novos produtos', column: 'backlog' },
-  { id: '3', title: 'Preparar email marketing', description: 'Segmento: revendedoras', column: 'doing' },
-  { id: '4', title: 'Design de campanha', description: 'Aguardando aprovação', column: 'review' },
-  { id: '5', title: 'Relatório semanal', description: 'Concluído', column: 'done' },
 ];
 
 const agents = [
@@ -40,6 +47,7 @@ const metrics = [
 export default function Home() {
   const [auth, setAuth] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState({ title: '', description: '', column: 'backlog' });
   const [view, setView] = useState('kanban');
   const router = useRouter();
@@ -54,48 +62,51 @@ export default function Home() {
     }
   }, [router]);
 
-  const loadTasks = () => {
+  const loadTasks = async () => {
     try {
-      const saved = localStorage.getItem('tasks');
-      if (saved) {
-        setTasks(JSON.parse(saved));
-      } else {
-        setTasks(initialTasks);
-        localStorage.setItem('tasks', JSON.stringify(initialTasks));
-      }
+      const tasksCollection = collection(db, 'tasks');
+      const taskSnapshot = await getDocs(tasksCollection);
+      const tasksList = taskSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTasks(tasksList);
     } catch (error) {
-      console.error('Erro ao carregar:', error);
-      setTasks(initialTasks);
+      console.error('Erro ao carregar tarefas:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveTasks = (newTasks) => {
+  const handleMoveTask = async (taskId, newColumn) => {
     try {
-      localStorage.setItem('tasks', JSON.stringify(newTasks));
-      setTasks(newTasks);
+      const taskRef = doc(db, 'tasks', taskId);
+      await updateDoc(taskRef, { column: newColumn });
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t));
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      console.error('Erro ao mover tarefa:', error);
     }
   };
 
-  const handleMoveTask = (taskId, newColumn) => {
-    const updated = tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t);
-    saveTasks(updated);
-  };
-
-  const handleAddTask = (e) => {
+  const handleAddTask = async (e) => {
     e.preventDefault();
     if (!newTask.title.trim()) return;
 
-    const newId = Date.now().toString();
-    const updated = [...tasks, { id: newId, ...newTask }];
-    saveTasks(updated);
-    setNewTask({ title: '', description: '', column: 'backlog' });
+    try {
+      const tasksCollection = collection(db, 'tasks');
+      await addDoc(tasksCollection, newTask);
+      setNewTask({ title: '', description: '', column: 'backlog' });
+      await loadTasks();
+    } catch (error) {
+      console.error('Erro ao adicionar tarefa:', error);
+    }
   };
 
-  const handleDeleteTask = (taskId) => {
-    const updated = tasks.filter(t => t.id !== taskId);
-    saveTasks(updated);
+  const handleDeleteTask = async (taskId) => {
+    try {
+      const taskRef = doc(db, 'tasks', taskId);
+      await deleteDoc(taskRef);
+      setTasks(tasks.filter(t => t.id !== taskId));
+    } catch (error) {
+      console.error('Erro ao deletar tarefa:', error);
+    }
   };
 
   if (!auth) return null;
@@ -197,69 +208,73 @@ export default function Home() {
               </div>
             </form>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-              {columns.map(column => (
-                <div key={column.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    {column.title}
-                  </h3>
-                  
-                  {tasks
-                    .filter(task => task.column === column.id)
-                    .map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('taskId', task.id);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const taskId = e.dataTransfer.getData('taskId');
-                          if (taskId) {
-                            handleMoveTask(taskId, column.id);
-                          }
-                        }}
-                        style={{
-                          background: '#f9f9f9',
-                          padding: '12px',
-                          marginBottom: '12px',
-                          borderRadius: '4px',
-                          borderLeft: `4px solid ${column.color}`,
-                          cursor: 'grab',
-                          userSelect: 'none'
-                        }}
-                      >
-                        <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-                          {task.title}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
-                          {task.description}
-                        </p>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>Carregando tarefas...</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                {columns.map(column => (
+                  <div key={column.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      {column.title}
+                    </h3>
+                    
+                    {tasks
+                      .filter(task => task.column === column.id)
+                      .map(task => (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('taskId', task.id);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const taskId = e.dataTransfer.getData('taskId');
+                            if (taskId) {
+                              handleMoveTask(taskId, column.id);
+                            }
+                          }}
                           style={{
-                            fontSize: '11px',
-                            padding: '4px 8px',
-                            background: '#ff6b6b',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer'
+                            background: '#f9f9f9',
+                            padding: '12px',
+                            marginBottom: '12px',
+                            borderRadius: '4px',
+                            borderLeft: `4px solid ${column.color}`,
+                            cursor: 'grab',
+                            userSelect: 'none'
                           }}
                         >
-                          Deletar
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              ))}
-            </div>
+                          <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+                            {task.title}
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
+                            {task.description}
+                          </p>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            style={{
+                              fontSize: '11px',
+                              padding: '4px 8px',
+                              background: '#ff6b6b',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Deletar
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
 
