@@ -17,6 +17,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const menuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+  { id: 'agentes', label: 'Agentes', icon: '🤖' },
+  { id: 'conteudo', label: 'Conteúdo', icon: '📝' },
+  { id: 'funis', label: 'Funis', icon: '📈' },
+  { id: 'trafego', label: 'Tráfego', icon: '🎯' },
+  { id: 'crm', label: 'CRM', icon: '👥' },
+  { id: 'biblioteca', label: 'Biblioteca', icon: '📚' },
+  { id: 'chat', label: 'Chat', icon: '💬' },
+  { id: 'suporte', label: 'Suporte', icon: '🆘' },
+  { id: 'crons', label: 'Crons', icon: '⏰' },
+  { id: 'pesquisa', label: 'Pesquisa', icon: '🔍' },
+  { id: 'memoria', label: 'Memória', icon: '🧠' },
+  { id: 'skills', label: 'Skills', icon: '⚡' },
+  { id: 'seguranca', label: 'Segurança', icon: '🔐' },
+  { id: 'logs', label: 'Logs', icon: '📋' },
+  { id: 'vendas', label: 'Vendas', icon: '💰' },
+];
+
 const columns = [
   { id: 'backlog', title: 'A Fazer', color: '#999' },
   { id: 'doing', title: 'Fazendo', color: '#af948c' },
@@ -44,12 +63,23 @@ const metrics = [
   { label: 'Conversão', value: '12.5%', color: '#8ca4af' },
 ];
 
+const PageComponent = ({ view, title }) => (
+  <div>
+    <h2 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: 'bold' }}>{title}</h2>
+    <div style={{ background: 'white', padding: '40px', borderRadius: '8px', textAlign: 'center', color: '#999' }}>
+      <p style={{ fontSize: '16px', margin: 0 }}>Seção "{title}" em desenvolvimento</p>
+      <p style={{ fontSize: '14px', margin: '8px 0 0 0' }}>Funcionalidades serão adicionadas em breve</p>
+    </div>
+  </div>
+);
+
 export default function Home() {
   const [auth, setAuth] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newTask, setNewTask] = useState({ title: '', description: '', column: 'backlog' });
-  const [view, setView] = useState('kanban');
+  const [view, setView] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -75,18 +105,22 @@ export default function Home() {
     }
   };
 
+  const saveTasks = (newTasks) => {
+    try {
+      setTasks(newTasks);
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+    }
+  };
+
   const handleMoveTask = async (taskId, newColumn) => {
     try {
-      // Atualizar no Firestore
       const taskRef = doc(db, 'tasks', taskId);
       await updateDoc(taskRef, { column: newColumn });
-      
-      // Atualizar localmente
       const updated = tasks.map(t => t.id === taskId ? { ...t, column: newColumn } : t);
       setTasks(updated);
     } catch (error) {
       console.error('Erro ao mover tarefa:', error);
-      // Se falhar, recarrega do Firestore
       await loadTasks();
     }
   };
@@ -117,23 +151,64 @@ export default function Home() {
 
   if (!auth) return null;
 
+  const currentMenu = menuItems.find(item => item.id === view);
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f5' }}>
       {/* SIDEBAR */}
-      <div style={{ width: '250px', background: '#2a2a2a', color: 'white', padding: '20px', overflowY: 'auto', borderRight: '1px solid #444' }}>
-        <h2 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>DonaSystem</h2>
-        <p style={{ margin: '0 0 40px 0', fontSize: '12px', color: '#999' }}>Painel de Controle</p>
+      <div style={{ 
+        width: '280px', 
+        background: '#1a1a1a', 
+        color: 'white', 
+        padding: '20px', 
+        overflowY: 'auto', 
+        borderRight: '1px solid #333',
+        position: mobileMenuOpen ? 'fixed' : 'static',
+        left: 0,
+        top: 0,
+        height: '100vh',
+        zIndex: 1000
+      }}>
+        <h2 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 'bold' }}>DonaSystem</h2>
+        <p style={{ margin: '0 0 30px 0', fontSize: '11px', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>Painel de Controle</p>
         
-        <nav>
-          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'kanban' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('kanban')}>
-            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Dashboard</a>
-          </div>
-          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'agentes' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('agentes')}>
-            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Agentes</a>
-          </div>
-          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'notificacoes' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('notificacoes')}>
-            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Notificações</a>
-          </div>
+        <nav style={{ marginBottom: '40px' }}>
+          {menuItems.map(item => (
+            <div 
+              key={item.id}
+              onClick={() => {
+                setView(item.id);
+                setMobileMenuOpen(false);
+              }}
+              style={{
+                marginBottom: '12px',
+                padding: '12px 16px',
+                background: view === item.id ? '#af948c' : 'transparent',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '14px',
+                color: view === item.id ? 'white' : '#ccc',
+                borderLeft: view === item.id ? '3px solid #fff' : '3px solid transparent'
+              }}
+              onMouseEnter={(e) => {
+                if (view !== item.id) {
+                  e.currentTarget.style.background = '#2a2a2a';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (view !== item.id) {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </div>
+          ))}
         </nav>
 
         <button
@@ -144,13 +219,13 @@ export default function Home() {
           style={{
             background: '#af948c',
             color: 'white',
-            padding: '12px',
-            borderRadius: '4px',
+            padding: '12px 16px',
+            borderRadius: '6px',
             border: 'none',
             cursor: 'pointer',
             width: '100%',
-            marginTop: '40px',
-            fontSize: '14px'
+            fontSize: '14px',
+            fontWeight: 'bold'
           }}
         >
           Sair
@@ -158,29 +233,35 @@ export default function Home() {
       </div>
       
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, padding: '24px', overflowY: 'auto', background: '#f5f5f5' }}>
-        {/* HEADER COM STATUS */}
+      <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+        {/* HEADER */}
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ marginBottom: '20px' }}>
-            <h1 style={{ margin: '0 0 8px 0', fontSize: '28px' }}>Painel de Controle</h1>
-            <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h1 style={{ margin: '0 0 8px 0', fontSize: '32px', fontWeight: 'bold' }}>
+                {currentMenu?.label || 'Dashboard'}
+              </h1>
+              <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
           </div>
 
-          {/* STATUS BAR - MÉTRICAS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-            {metrics.map((metric, idx) => (
-              <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${metric.color}` }}>
-                <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{metric.label}</p>
-                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: metric.color }}>{metric.value}</p>
-              </div>
-            ))}
-          </div>
+          {/* STATUS BAR - Só mostra no Dashboard */}
+          {view === 'dashboard' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              {metrics.map((metric, idx) => (
+                <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${metric.color}` }}>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{metric.label}</p>
+                  <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: metric.color }}>{metric.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* VIEW: KANBAN */}
-        {view === 'kanban' && (
+        {/* CONTEÚDO POR VIEW */}
+        {view === 'dashboard' && (
           <>
             <form onSubmit={handleAddTask} style={{ marginBottom: '40px', padding: '20px', background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Adicionar Nova Tarefa</h3>
@@ -219,21 +300,7 @@ export default function Home() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                 {columns.map(column => (
-                  <div 
-                key={column.id} 
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const taskId = e.dataTransfer.getData('taskId');
-                  console.log('Drop na coluna - taskId:', taskId, 'column:', column.id);
-                  if (taskId) {
-                    handleMoveTask(taskId, column.id);
-                  }
-                }}
-                style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div key={column.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                     <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                       {column.title}
                     </h3>
@@ -247,7 +314,6 @@ export default function Home() {
                           onDragStart={(e) => {
                             e.dataTransfer.effectAllowed = 'move';
                             e.dataTransfer.setData('taskId', task.id);
-                            console.log('Drag start - taskId:', task.id);
                           }}
                           style={{
                             background: '#f9f9f9',
@@ -288,10 +354,8 @@ export default function Home() {
           </>
         )}
 
-        {/* VIEW: AGENTES */}
         {view === 'agentes' && (
           <div>
-            <h2 style={{ marginBottom: '24px', fontSize: '20px' }}>Agentes Ativos</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
               {agents.map((agent, idx) => (
                 <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderTop: `4px solid ${agent.status === 'running' ? '#96af8c' : '#999'}` }}>
@@ -314,35 +378,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* VIEW: NOTIFICAÇÕES */}
-        {view === 'notificacoes' && (
-          <div>
-            <h2 style={{ marginBottom: '24px', fontSize: '20px' }}>Notificações</h2>
-            <div style={{ maxWidth: '600px' }}>
-              {notifications.map((notif) => (
-                <div key={notif.id} style={{ 
-                  background: 'white', 
-                  padding: '16px', 
-                  marginBottom: '12px', 
-                  borderRadius: '8px', 
-                  borderLeft: `4px solid ${notif.priority === 'high' ? '#ff6b6b' : notif.priority === 'medium' ? '#ffa94d' : '#96af8c'}`,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold' }}>{notif.message}</p>
-                      <span style={{ fontSize: '12px', color: '#999', textTransform: 'uppercase' }}>
-                        {notif.priority === 'high' ? '⚠️ Alta prioridade' : notif.priority === 'medium' ? '📌 Média prioridade' : '✅ Baixa prioridade'}
-                      </span>
-                    </div>
-                    <button style={{ background: '#f0f0f0', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px' }}>
-                      Marcar como lida
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {['conteudo', 'funis', 'trafego', 'crm', 'biblioteca', 'chat', 'suporte', 'crons', 'pesquisa', 'memoria', 'skills', 'seguranca', 'logs', 'vendas'].includes(view) && (
+          <PageComponent view={view} title={currentMenu?.label} />
         )}
       </main>
     </div>
