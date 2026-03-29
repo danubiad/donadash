@@ -17,10 +17,31 @@ const initialTasks = [
   { id: '5', title: 'Relatório semanal', description: 'Concluído', column: 'done' },
 ];
 
+const agents = [
+  { name: 'Content Harvester', role: 'Busca de novidades', status: 'idle' },
+  { name: 'Catalog Manager', role: 'Gerenciador de catálogo', status: 'running' },
+  { name: 'Email Automator', role: 'Automação de emails', status: 'idle' },
+  { name: 'Tráfego Specialist', role: 'Gestão de tráfego pago', status: 'idle' },
+];
+
+const notifications = [
+  { id: 1, type: 'alert', message: 'Catálogo Shopee precisa de atualização', priority: 'high' },
+  { id: 2, type: 'info', message: 'Novo email de revendedora aguardando resposta', priority: 'medium' },
+  { id: 3, type: 'success', message: 'Relatório semanal concluído com sucesso', priority: 'low' },
+];
+
+const metrics = [
+  { label: 'Faturamento (Mês)', value: 'R$ 80.000', color: '#af948c' },
+  { label: 'Revendedoras Ativas', value: '1.240', color: '#96af8c' },
+  { label: 'Leads da Semana', value: '342', color: '#afa08c' },
+  { label: 'Conversão', value: '12.5%', color: '#8ca4af' },
+];
+
 export default function Home() {
   const [auth, setAuth] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: '', description: '', column: 'backlog' });
+  const [view, setView] = useState('kanban');
   const router = useRouter();
 
   useEffect(() => {
@@ -81,19 +102,20 @@ export default function Home() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <div style={{ width: '250px', background: '#2a2a2a', color: 'white', padding: '20px', overflowY: 'auto' }}>
+      {/* SIDEBAR */}
+      <div style={{ width: '250px', background: '#2a2a2a', color: 'white', padding: '20px', overflowY: 'auto', borderRight: '1px solid #444' }}>
         <h2 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>DonaSystem</h2>
         <p style={{ margin: '0 0 40px 0', fontSize: '12px', color: '#999' }}>Painel de Controle</p>
         
         <nav>
-          <div style={{ marginBottom: '16px' }}>
-            <a href="/" style={{ color: '#af948c', textDecoration: 'none', fontSize: '14px' }}>Dashboard</a>
+          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'kanban' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('kanban')}>
+            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Dashboard</a>
           </div>
-          <div style={{ marginBottom: '16px' }}>
-            <a href="/" style={{ color: '#ccc', textDecoration: 'none', fontSize: '14px' }}>Agentes</a>
+          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'agentes' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('agentes')}>
+            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Agentes</a>
           </div>
-          <div style={{ marginBottom: '16px' }}>
-            <a href="/" style={{ color: '#ccc', textDecoration: 'none', fontSize: '14px' }}>Projetos</a>
+          <div style={{ marginBottom: '16px', padding: '8px 12px', background: view === 'notificacoes' ? '#af948c' : 'transparent', borderRadius: '4px', cursor: 'pointer' }} onClick={() => setView('notificacoes')}>
+            <a style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>Notificações</a>
           </div>
         </nav>
 
@@ -118,110 +140,185 @@ export default function Home() {
         </button>
       </div>
       
-      <main style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ margin: '0 0 8px 0' }}>Painel de Controle</h1>
-          <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
+      {/* MAIN CONTENT */}
+      <main style={{ flex: 1, padding: '24px', overflowY: 'auto', background: '#f5f5f5' }}>
+        {/* HEADER COM STATUS */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <h1 style={{ margin: '0 0 8px 0', fontSize: '28px' }}>Painel de Controle</h1>
+            <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+
+          {/* STATUS BAR - MÉTRICAS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            {metrics.map((metric, idx) => (
+              <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${metric.color}` }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{metric.label}</p>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: metric.color }}>{metric.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleAddTask} style={{ marginBottom: '40px', padding: '20px', background: '#f9f9f9', borderRadius: '8px' }}>
-          <h3 style={{ margin: '0 0 16px 0' }}>Adicionar Nova Tarefa</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '12px', alignItems: 'flex-end' }}>
-            <input
-              type="text"
-              placeholder="Título"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
-            />
-            <input
-              type="text"
-              placeholder="Descrição"
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
-            />
-            <select
-              value={newTask.column}
-              onChange={(e) => setNewTask({ ...newTask, column: e.target.value })}
-              style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
-            >
-              {columns.map(col => (
-                <option key={col.id} value={col.id}>{col.title}</option>
-              ))}
-            </select>
-            <button type="submit" style={{ padding: '10px 20px', background: '#af948c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-              Adicionar
-            </button>
-          </div>
-        </form>
+        {/* VIEW: KANBAN */}
+        {view === 'kanban' && (
+          <>
+            <form onSubmit={handleAddTask} style={{ marginBottom: '40px', padding: '20px', background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Adicionar Nova Tarefa</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '12px', alignItems: 'flex-end' }}>
+                <input
+                  type="text"
+                  placeholder="Título"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Descrição"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                />
+                <select
+                  value={newTask.column}
+                  onChange={(e) => setNewTask({ ...newTask, column: e.target.value })}
+                  style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                >
+                  {columns.map(col => (
+                    <option key={col.id} value={col.id}>{col.title}</option>
+                  ))}
+                </select>
+                <button type="submit" style={{ padding: '10px 20px', background: '#af948c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>
+                  Adicionar
+                </button>
+              </div>
+            </form>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-          {columns.map(column => (
-            <div key={column.id} style={{ background: '#f9f9f9', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}` }}>
-              <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold' }}>
-                {column.title}
-              </h3>
-              
-              {tasks
-                .filter(task => task.column === column.id)
-                .map(task => (
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('taskId', task.id);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const taskId = e.dataTransfer.getData('taskId');
-                      if (taskId) {
-                        handleMoveTask(taskId, column.id);
-                      }
-                    }}
-                    style={{
-                      background: 'white',
-                      padding: '12px',
-                      marginBottom: '12px',
-                      borderRadius: '4px',
-                      borderLeft: `4px solid ${column.color}`,
-                      cursor: 'grab',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-                      {task.title}
-                    </p>
-                    <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
-                      {task.description}
-                    </p>
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      style={{
-                        fontSize: '11px',
-                        padding: '4px 8px',
-                        background: '#ff6b6b',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Deletar
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+              {columns.map(column => (
+                <div key={column.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', minHeight: '500px', border: `2px solid ${column.color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <h3 style={{ margin: '0 0 16px 0', color: column.color, fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    {column.title}
+                  </h3>
+                  
+                  {tasks
+                    .filter(task => task.column === column.id)
+                    .map(task => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('taskId', task.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const taskId = e.dataTransfer.getData('taskId');
+                          if (taskId) {
+                            handleMoveTask(taskId, column.id);
+                          }
+                        }}
+                        style={{
+                          background: '#f9f9f9',
+                          padding: '12px',
+                          marginBottom: '12px',
+                          borderRadius: '4px',
+                          borderLeft: `4px solid ${column.color}`,
+                          cursor: 'grab',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <p style={{ fontSize: '14px', marginBottom: '4px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+                          {task.title}
+                        </p>
+                        <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0' }}>
+                          {task.description}
+                        </p>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          style={{
+                            fontSize: '11px',
+                            padding: '4px 8px',
+                            background: '#ff6b6b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Deletar
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* VIEW: AGENTES */}
+        {view === 'agentes' && (
+          <div>
+            <h2 style={{ marginBottom: '24px', fontSize: '20px' }}>Agentes Ativos</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+              {agents.map((agent, idx) => (
+                <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderTop: `4px solid ${agent.status === 'running' ? '#96af8c' : '#999'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>{agent.name}</h3>
+                    <span style={{ 
+                      padding: '4px 12px', 
+                      borderRadius: '20px', 
+                      fontSize: '12px', 
+                      background: agent.status === 'running' ? '#d4f4dd' : '#f0f0f0',
+                      color: agent.status === 'running' ? '#2d7a3d' : '#666'
+                    }}>
+                      {agent.status === 'running' ? '🟢 Ativo' : '⚪ Inativo'}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>{agent.role}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: NOTIFICAÇÕES */}
+        {view === 'notificacoes' && (
+          <div>
+            <h2 style={{ marginBottom: '24px', fontSize: '20px' }}>Notificações</h2>
+            <div style={{ maxWidth: '600px' }}>
+              {notifications.map((notif) => (
+                <div key={notif.id} style={{ 
+                  background: 'white', 
+                  padding: '16px', 
+                  marginBottom: '12px', 
+                  borderRadius: '8px', 
+                  borderLeft: `4px solid ${notif.priority === 'high' ? '#ff6b6b' : notif.priority === 'medium' ? '#ffa94d' : '#96af8c'}`,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold' }}>{notif.message}</p>
+                      <span style={{ fontSize: '12px', color: '#999', textTransform: 'uppercase' }}>
+                        {notif.priority === 'high' ? '⚠️ Alta prioridade' : notif.priority === 'medium' ? '📌 Média prioridade' : '✅ Baixa prioridade'}
+                      </span>
+                    </div>
+                    <button style={{ background: '#f0f0f0', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px' }}>
+                      Marcar como lida
                     </button>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );
