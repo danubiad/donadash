@@ -123,12 +123,12 @@ export default function Home() {
   const currentPage = pageContent[activeView] || { title: 'Dashboard' };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', width: '100%' }}>
       {/* SIDEBAR */}
       <Sidebar activeView={activeView} onViewChange={setActiveView} onLogout={handleLogout} />
 
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+      <main style={{ flex: 1, padding: '32px', overflowY: 'auto', width: '100%' }}>
         {/* HEADER */}
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ margin: '0 0 8px 0', fontSize: '32px', fontWeight: '700' }}>
